@@ -167,6 +167,33 @@ imaging sessions** — and that's what's actually missing. More synthetic
 variations of the same 10 plates don't add the between-session diversity
 needed to separate "strain" from "which day this was photographed."
 
+## Numeric dataset
+
+`data/colony_numeric_dataset.csv` / `.xlsx` — every colony crop reduced to
+the exact 10-feature vector used for classification above (built by
+`scripts/build_xlsx.py`):
+
+`equiv_diameter, circularity, solidity, mean_hue, mean_sat, mean_val, std_hue, std_sat, std_val, texture_std`
+
+The `.xlsx` has three sheets:
+- **Colony Data** — all 53 rows, one per colony, tagged with `strain` and
+  `plate_group`.
+- **Strain Summary** — n / mean / std per feature, grouped by strain,
+  computed with live formulas (`SUMPRODUCT`-based, so they recompute if you
+  edit `Colony Data`) rather than pasted-in numbers.
+- **Plate Summary** — the same, grouped by individual physical plate instead
+  of strain — this is the sheet that shows the batch-effect confound
+  directly (e.g. compare brightness across HS2's own 2 plates vs. across
+  strains).
+
+Note: this sandbox has no LibreOffice available to mechanically recalculate
+the workbook, so the formulas weren't verified by opening the file here —
+instead the exact same arithmetic (`n`, `Σx`, `Σx²` → mean/sample-std) was
+independently checked against `pandas.groupby(...).agg(['mean','std'])` in
+Python and matched to ~1e-13. Excel/Google Sheets recalculates all formulas
+automatically on open, so this is not expected to require any action, but
+worth a glance the first time you open it.
+
 ## Recommended next steps
 
 1. **Re-photograph with interleaved sessions**: shoot plates from different
