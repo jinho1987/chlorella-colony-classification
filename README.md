@@ -261,17 +261,24 @@ worth a glance the first time you open it.
 
 ## Recommended next steps
 
-1. **Re-photograph with interleaved sessions**: shoot plates from different
-   strains in the same sitting, under the same lighting/exposure, ideally
-   with a color reference card in frame for white-balance correction.
-2. **More plates per strain** (5-10+) so a train/test split can hold out
-   entire plates per class — never split at the colony level, since colonies
-   from the same plate are not independent samples.
-3. Only once (1) and (2) are addressed does it make sense to train an image
-   classifier (transfer learning on a small pretrained CNN, given the likely
-   dataset size) and evaluate it on held-out plates, with a Grad-CAM/attention
-   check to confirm it's attending to colony morphology and not to
-   labels/background artifacts.
+See **[RESHOOT_PROTOCOL.md](RESHOOT_PROTOCOL.md)** for the full plan. In
+short:
+
+1. **Interleave strains within every imaging session** (never shoot one
+   strain's plates back-to-back) — this is the one change that actually
+   breaks the confound; everything else improves data quality on top of it.
+2. **Fix the imaging rig**: tripod-mounted phone, locked exposure/white
+   balance, a diffuse artificial light box instead of daylight, a color
+   reference card + scale ruler in every frame.
+3. **More plates per strain** (10-12+, target in the protocol) so a
+   train/test split can hold out entire plates per class with enough held-out
+   samples to be stable — never split at the colony level.
+4. Consider **dilution spread plates** instead of/alongside streak plates —
+   far more well-isolated single colonies per physical plate.
+5. Only once the new data is in hand does it make sense to train an image
+   classifier (the protocol includes a pre-registered evaluation plan reusing
+   `scripts/train_classifier.py` as the harness), with a Grad-CAM/confound-ratio
+   check to confirm it's attending to colony morphology and not artifacts.
 
 ## Repo contents
 
