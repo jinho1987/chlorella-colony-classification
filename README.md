@@ -167,6 +167,60 @@ imaging sessions** — and that's what's actually missing. More synthetic
 variations of the same 10 plates don't add the between-session diversity
 needed to separate "strain" from "which day this was photographed."
 
+## Which feature best explains each strain?
+
+`scripts/explain_strains.py` computes, per strain, a one-vs-rest Cohen's d
+for every feature (how far that strain's mean sits from the other three, in
+pooled-SD units) — see `figures/strain_effect_size_heatmap.png`.
+
+| Strain | Top feature | Cohen's d | 2nd feature | Cohen's d |
+|---|---|---|---|---|
+| HS2 | mean_val (brightness) | -1.14 | std_hue | +0.88 |
+| ALE | std_hue | -0.76 | std_sat | -0.67 |
+| HMF | texture_std | -1.04 | std_val | -1.01 |
+| HS19 | std_val | +1.18 | texture_std | +1.18 |
+
+Those look like strong effects. But we already showed brightness can look
+"significant" purely from lighting differences between photo sessions, so
+every feature here gets the same check applied to all 10, not just
+brightness: **does between-strain spread exceed within-strain,
+between-plate spread?** (ratio computed from plate means; ratio > 1 favors a
+real strain effect, ratio ≤ 1 means plate-to-plate noise alone explains as
+much or more.)
+
+| Feature | Between-strain SD | Within-strain (between-plate) SD | Ratio |
+|---|---|---|---|
+| circularity | 0.09 | 0.07 | **1.32** |
+| solidity | 0.06 | 0.04 | **1.29** |
+| mean_val | 7.66 | 10.24 | 0.75 |
+| std_hue | 1.30 | 1.97 | 0.66 |
+| std_val | 3.09 | 4.81 | 0.64 |
+| texture_std | 2.86 | 4.62 | 0.62 |
+| std_sat | 3.52 | 10.54 | 0.33 |
+| mean_sat | 7.87 | 22.70 | 0.35 |
+| equiv_diameter | 2.25 | 8.53 | 0.26 |
+| mean_hue | 0.65 | 9.42 | 0.07 |
+
+**The pattern is telling: every feature that showed up as a strain's "top
+distinguishing feature" above (brightness, hue/saturation spread, texture)
+has a confound ratio well below 1** — meaning plate-to-plate lighting noise
+within one strain is *larger* than the difference between strains.
+`figures/top_feature_per_strain_by_plate.png` shows this directly: e.g. HS2's
+top feature (brightness) jumps from ~30 to ~49 between its own two plates —
+a bigger swing than the whole between-strain spread that produced its
+striking effect size in the first place.
+
+The only two features with ratio > 1 — **circularity and solidity**, i.e.
+colony shape — make physical sense as the most lighting-robust measurements
+(shape doesn't change with exposure), but their effect sizes are small
+(0.09–0.35), so they're the most *trustworthy* signal in this dataset and
+also the *weakest* one. There is no feature here that is both strong and
+trustworthy.
+
+**Bottom line:** nothing in this dataset "explains" a strain in a way that
+would hold up on a new plate. The features that look most explanatory are
+exactly the ones most contaminated by which day a plate was photographed.
+
 ## Numeric dataset
 
 `data/colony_numeric_dataset.csv` / `.xlsx` — every colony crop reduced to
