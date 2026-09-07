@@ -38,19 +38,26 @@ measurable signal separates the strains at all before committing to a CNN.
 
 A handful of remaining false positives (streak fragments, plate-edge shadows)
 were caught by eye in the QC overlays and manually removed — see commit
-history / `data/colony_manifest.csv`.
+history / `data/colony_manifest.csv`. Example overlay (green = accepted,
+red = rejected with reason) — the other three strains' overlays are in
+`qc_samples/`:
+
+![QC overlay for one HS2 plate: green boxes are accepted colonies, red boxes are rejected candidates labeled with the reason](<qc_samples/HS2(앞)-1_overlay.jpg>)
 
 **Result: 53 clean single-colony crops** — HS2 (mother strain) = 9, ALE = 15,
-HMF = 7, HS19 = 22 — from 24 source photos. See `figures/contact_sheet.jpg`
-for a montage of every crop, and `qc_samples/` for example overlays.
+HMF = 7, HS19 = 22 — from 24 source photos. Montage of every crop below
+(`qc_samples/` has example accept/reject overlays):
+
+![Contact sheet of all 53 cropped colonies, by strain](figures/contact_sheet.jpg)
 
 ## First look: is there any separable signal at all?
 
 Before training any classifier, `scripts/analyze_features.py` and
 `scripts/plot_features.py` compute simple, interpretable features per colony
 (equivalent diameter, circularity, mean hue/saturation/brightness) and compare
-them across strains (Kruskal-Wallis test). See
-`figures/strain_feature_comparison.png`.
+them across strains (Kruskal-Wallis test):
+
+![Colony morphology and color by strain, boxplots with Kruskal-Wallis p-values](figures/strain_feature_comparison.png)
 
 | feature | Kruskal-Wallis p-value |
 |---|---|
@@ -114,9 +121,9 @@ misleadingly high accuracy.
 that because the plate groups are small and unevenly sized.)
 
 The real-label model did not just fail to beat chance — it scored **worse
-than 93% of models trained on randomly shuffled labels**. See
-`figures/classifier_lopo_results.png` for the null distribution and
-confusion matrix.
+than 93% of models trained on randomly shuffled labels**:
+
+![LOPO accuracy vs. permutation null distribution, and confusion matrix](figures/classifier_lopo_results.png)
 
 **Interpretation:** this is the expected signature of a model overfitting to
 per-plate idiosyncrasies (lighting, exposure, agar staining that day) that do
@@ -171,7 +178,9 @@ needed to separate "strain" from "which day this was photographed."
 
 `scripts/explain_strains.py` computes, per strain, a one-vs-rest Cohen's d
 for every feature (how far that strain's mean sits from the other three, in
-pooled-SD units) — see `figures/strain_effect_size_heatmap.png`.
+pooled-SD units):
+
+![Heatmap of Cohen's d, strain vs. rest, for every feature](figures/strain_effect_size_heatmap.png)
 
 | Strain | Top feature | Cohen's d | 2nd feature | Cohen's d |
 |---|---|---|---|---|
@@ -204,11 +213,13 @@ much or more.)
 **The pattern is telling: every feature that showed up as a strain's "top
 distinguishing feature" above (brightness, hue/saturation spread, texture)
 has a confound ratio well below 1** — meaning plate-to-plate lighting noise
-within one strain is *larger* than the difference between strains.
-`figures/top_feature_per_strain_by_plate.png` shows this directly: e.g. HS2's
-top feature (brightness) jumps from ~30 to ~49 between its own two plates —
-a bigger swing than the whole between-strain spread that produced its
-striking effect size in the first place.
+within one strain is *larger* than the difference between strains. The plot
+below shows this directly: e.g. HS2's top feature (brightness) jumps from
+~30 to ~49 between its own two plates — a bigger swing than the whole
+between-strain spread that produced its striking effect size in the first
+place.
+
+![Each strain's top feature broken down by its own physical plates](figures/top_feature_per_strain_by_plate.png)
 
 The only two features with ratio > 1 — **circularity and solidity**, i.e.
 colony shape — make physical sense as the most lighting-robust measurements
