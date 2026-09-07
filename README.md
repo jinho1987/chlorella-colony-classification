@@ -261,8 +261,15 @@ worth a glance the first time you open it.
 
 ## Recommended next steps
 
-See **[RESHOOT_PROTOCOL.md](RESHOOT_PROTOCOL.md)** for the full plan. In
-short:
+**Start with [PILOT_PROTOCOL.md](PILOT_PROTOCOL.md)** — a 12-plate pilot
+(same plate count as the original dataset) that tests only the imaging-
+protocol fix in isolation, with a concrete go/no-go check before committing
+to the full shoot below. `scripts/run_pilot_segmentation.py` and
+`scripts/analyze_pilot_session_confound.py` are ready to run the moment
+pilot photos are in.
+
+See **[RESHOOT_PROTOCOL.md](RESHOOT_PROTOCOL.md)** for the full-scale plan
+this pilot is validating. In short:
 
 1. **Interleave strains within every imaging session** (never shoot one
    strain's plates back-to-back) — this is the one change that actually
