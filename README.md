@@ -86,6 +86,87 @@ distinguish "this is really the strain" from "this is really the lighting
 that day." This needs to be fixed at the data-collection stage, not the
 modeling stage.
 
+## We tried the classifier anyway — here's what happened
+
+Rather than stop at the confound warning, we trained a classifier on the 53
+crops to see directly what happens (`scripts/train_classifier.py`,
+`scripts/plot_classifier_results.py`). Given n=53, we used interpretable
+features (colony size, circularity, solidity, HSV color mean+spread, a
+texture measure) rather than a deep CNN — a CNN has far more parameters than
+training examples here and would only be more prone to the same failure
+mode, not less.
+
+**Evaluation protocol:** Leave-One-Plate-Out cross-validation (LOPO) — the
+model is tested only on colonies from a physical plate it never saw during
+training (10 plates total across the 4 strains: ALE×3, HMF×2, HS19×3, HS2×2).
+This is the minimum bar for a believable result; a random colony-level
+train/test split would leak same-plate colonies into both sides and produce
+misleadingly high accuracy.
+
+**Result:**
+
+| Model | LOPO accuracy | Permutation-null mean | p-value (observed ≥ null) |
+|---|---|---|---|
+| Random Forest | **0.019** (1/53 correct) | 0.159 | 0.932 |
+| Logistic Regression | 0.019 | 0.167 | 0.912 |
+
+(Balanced chance for 4 classes would be 0.25; the null mean is lower than
+that because the plate groups are small and unevenly sized.)
+
+The real-label model did not just fail to beat chance — it scored **worse
+than 93% of models trained on randomly shuffled labels**. See
+`figures/classifier_lopo_results.png` for the null distribution and
+confusion matrix.
+
+**Interpretation:** this is the expected signature of a model overfitting to
+per-plate idiosyncrasies (lighting, exposure, agar staining that day) that do
+not transfer to a new plate of the same strain — exactly what the earlier
+brightness-confound analysis predicted. Tellingly, `mean_val` (brightness)
+is the single most "important" feature when the same model is fit on *all*
+the data with no held-out plate — i.e., it's the easiest thing to memorize
+within a plate, and the least useful thing across plates. **This is a clean
+negative result, not an inconclusive one**: with the current photos, there
+is no image-based signal that generalizes across plates, for either a
+classical-feature model or (by extension) a CNN.
+
+## Is any *pair* of strains separable, even if all four aren't?
+
+The 4-way task failing doesn't rule out two specific strains being
+distinguishable. `scripts/pairwise_classifier.py` re-ran the same LOPO
+protocol on all 6 strain pairs individually:
+
+| Pair | n (A/B) | LOPO acc | permutation-null mean | p-value |
+|---|---|---|---|---|
+| HS2 vs ALE | 9/15 | 0.125 | 0.348 | 1.000 |
+| HS2 vs HMF | 9/7 | 0.125 | 0.232 | 0.874 |
+| HS2 vs HS19 | 9/22 | 0.065 | 0.401 | 0.897 |
+| ALE vs HMF | 15/7 | 0.091 | 0.360 | 0.894 |
+| ALE vs HS19 | 15/22 | 0.027 | 0.343 | 1.000 |
+| HMF vs HS19 | 7/22 | 0.103 | 0.389 | 0.817 |
+
+Every single pair shows the same pattern as the 4-way result: observed
+accuracy sits *below* the permutation-null mean in all six cases. There is
+no "easy pair" hiding in this dataset — the failure is uniform.
+
+## Does augmentation help?
+
+`scripts/augment_and_train.py` expanded the dataset 10x (rotation, flips,
+and — specifically targeting the diagnosed confound — brightness/contrast/
+saturation jitter, plus mild noise), keeping every augmented copy tagged to
+its original plate so LOPO grouping still prevents leakage. Result:
+unchanged.
+
+| Model (10x augmented) | LOPO accuracy | permutation-null mean | p-value |
+|---|---|---|---|
+| Random Forest | 0.025 | 0.152 | 0.876 |
+| Logistic Regression | 0.025 | 0.169 | 0.945 |
+
+Augmentation can add rotation/flip invariance and force the model to not
+lean on absolute brightness, but it **cannot manufacture new plates or new
+imaging sessions** — and that's what's actually missing. More synthetic
+variations of the same 10 plates don't add the between-session diversity
+needed to separate "strain" from "which day this was photographed."
+
 ## Recommended next steps
 
 1. **Re-photograph with interleaved sessions**: shoot plates from different
@@ -109,6 +190,7 @@ modeling stage.
 - `data/colony_features.csv` — per-colony size/color features used in the
   analysis above.
 - `data/cropped_colonies/` — the 53 single-colony crops, by strain.
-- `figures/` — the contact sheet and the strain comparison figure.
+- `figures/` — the contact sheet, strain comparison figure, and the
+  classifier LOPO-CV / permutation-test results.
 - `qc_samples/` — example QC overlays (one per strain) showing accepted vs.
   rejected candidates.
